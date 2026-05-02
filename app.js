@@ -221,7 +221,7 @@ function render() {
     const isJapaneseOnly = document.getElementById('japanese-filter').checked;
     const leagueFilter = document.getElementById('league-filter').value;
 
-    // 日付表示の更新
+    // 日付表示の更新（UI用）
     if (currentMode === 'date') {
         const d = new Date();
         d.setDate(d.getDate() + selectedDateOffset);
@@ -233,20 +233,34 @@ function render() {
         document.getElementById('date-display').innerText = "";
     }
 
+    // 日本時間（JST）に変換してフォーマットするヘルパー関数
+    function getJSTInfo(event) {
+        // UTCの時間をDateオブジェクトとして生成
+        // TheSportsDBのstrTimestampは末尾にZがない場合があるため、明示的にUTCとして扱う
+        const utcStr = event.strTimestamp ? event.strTimestamp.replace(" ", "T") : `${event.dateEvent}T${event.strTime || "00:00:00"}`;
+        const dateObj = new Date(utcStr + "Z"); // 末尾にZをつけてUTCとして認識させる
+
+        // 日本時間に変換した「日付」と「時刻」を取得
+        const jstDate = dateObj.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }); // YYYY-MM-DD形式
+        const jstTime = dateObj.toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
+        
+        return { jstDate, jstTime };
+    }
+
     let targetEvents = [];
 
     if (currentMode === 'date') {
         const targetDate = getFormattedDate(selectedDateOffset);
-        targetEvents = allEvents.filter(ev => ev.dateEvent === targetDate);
+        // 重要：APIのdateEvent（UTC）ではなく、日本時間に変換した後の日付でフィルタリングする
+        targetEvents = allEvents.filter(ev => {
+            const { jstDate } = getJSTInfo(ev);
+            return jstDate === targetDate;
+        });
     } else {
         targetEvents = allEvents.filter(ev => ev.idLeague === leagueFilter);
         
-        // リーグモードの場合は、日付順に並び替える
-        targetEvents.sort((a, b) => {
-            const dateA = new Date(a.dateEvent + "T" + (a.strTime || "00:00:00"));
-            const dateB = new Date(b.dateEvent + "T" + (b.strTime || "00:00:00"));
-            return dateA - dateB;
-        });
+        // 日付順に並び替え
+        targetEvents.sort((a, b) => new Date(a.strTimestamp) - new Date(b.strTimestamp));
     }
 
     if (isJapaneseOnly) {
@@ -265,13 +279,12 @@ function render() {
         
         const homePlayersList = findJapanesePlayers(ev.strHomeTeam);
         const awayPlayersList = findJapanesePlayers(ev.strAwayTeam);
-
         const homePlayers = homePlayersList ? `🇯🇵 ${homePlayersList.join(',')}` : "";
         const awayPlayers = awayPlayersList ? `🇯🇵 ${awayPlayersList.join(',')}` : "";
 
-        const timeStr = ev.strTime ? ev.strTime.substring(0, 5) : "--:--";
+        // 日本時間の取得
+        const { jstDate, jstTime } = getJSTInfo(ev);
 
-        // ▼▼▼ スコア表示の追加 ▼▼▼
         let scoreDisplay = "VS";
         if (ev.intHomeScore !== null && ev.intAwayScore !== null) {
             scoreDisplay = `${ev.intHomeScore} - ${ev.intAwayScore}`;
@@ -280,19 +293,19 @@ function render() {
         return `
             <div class="match-card">
                 <div style="font-size: 0.8em; color: #666; text-align: center; margin-bottom: 8px;">
-                    ${ev.dateEvent} ${timeStr} (${ev.strLeague})
+                    ${jstDate} ${jstTime} (日本時間)
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="width: 40%; text-align: center;">
                         <div style="font-weight: bold;">${flag} ${homeName}</div>
-                        ${homePlayers ? `<div style="font-size: 0.7em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${homePlayers}</div>` : ''}
+                        ${homePlayers ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${homePlayers}</div>` : ''}
                     </div>
                     <div style="width: 20%; text-align: center; font-weight: bold; font-size: 1.2rem; color: #8b4513;">
                         ${scoreDisplay}
                     </div>
                     <div style="width: 40%; text-align: center;">
                         <div style="font-weight: bold;">${flag} ${awayName}</div>
-                        ${awayPlayers ? `<div style="font-size: 0.7em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${awayPlayers}</div>` : ''}
+                        ${awayPlayers ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${awayPlayers}</div>` : ''}
                     </div>
                 </div>
             </div>
