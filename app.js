@@ -33,7 +33,7 @@ const TEAM_DISPLAYS = {
     
     // イングランド2部（日本人所属チームなど）
     "Blackburn": "ブラックバーン", "Burnley": "バーンリー", "Coventry": "コヴェントリー",
-    "Derby": "ダービー", "Leeds": "リーズ", "Luton": "ルートン", "Middlesbrough": "ミドルズブラ",
+    "Derby": "ダービー", "Leeds": "あリーズ", "Luton": "ルートン", "Middlesbrough": "ミドルズブラ",
     "Millwall": "ミルウォール", "Norwich": "ノリッジ", "Oxford": "オックスフォード",
     "Plymouth": "プリマス", "Portsmouth": "ポーツマス", "Preston": "プレストン",
     "QPR": "QPR", "Queens Park Rangers": "QPR", "Sheffield Utd": "シェフィールド・U",
