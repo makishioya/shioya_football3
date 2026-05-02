@@ -150,7 +150,7 @@ function selectDateTab(offset, tabId) {
 // ▼▼▼ ここから書き換え ▼▼▼
 
 async function fetchLeagueEvents(leagueId) {
-    const cacheKey = `events_v7_${leagueId}`; // v7に変更して古いキャッシュを破棄
+    const cacheKey = `events_v8_${leagueId}`; // 【重要】v8に変更して古いキャッシュを完全に破棄
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
 
@@ -169,11 +169,14 @@ async function fetchLeagueEvents(leagueId) {
         const nextRes = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${leagueId}`);
         const nextData = await nextRes.json();
 
+        // 過去と未来のデータを合体
         const combined = [...(pastData.events || []), ...(nextData.events || [])];
         
-        // 【修正】取得できた件数が1件以上ある場合のみキャッシュに保存する（空データ記憶の防止）
+        // 【重要】取得できた件数が1件以上ある場合のみキャッシュに保存する（空データ記憶の防止）
         if (combined.length > 0) {
             localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combined }));
+        } else {
+            console.warn(`リーグID ${leagueId} のデータが0件だったため、キャッシュへの保存を見送りました。`);
         }
         
         return combined;
@@ -182,6 +185,8 @@ async function fetchLeagueEvents(leagueId) {
         return [];
     }
 }
+
+// ▲▲▲ ここまで書き換え ▲▲▲
 
 async function loadAllData() {
     const container = document.getElementById('match-list');
