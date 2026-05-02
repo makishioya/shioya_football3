@@ -1,8 +1,7 @@
 /**
- * Shioya Football 3 - TheSportsDB版 (過去・未来 統合版)
+ * Shioya Football 3 - TheSportsDB版 (JST完全対応版)
  */
 
-// 1. リーグ設定（TheSportsDBのID）
 const COMPETITION_IDS = {
     "premier_league": "4328",
     "laliga": "4335",
@@ -15,8 +14,6 @@ const COMPETITION_IDS = {
     "belgium": "4338",
     "j_league": "4324"
 };
-
-const MAJOR_LEAGUE_IDS = ["4328", "4335", "4331", "4332", "4334"];
 
 const LEAGUE_FLAGS = {
     "4328": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "4335": "🇪🇸", "4331": "🇩🇪", "4332": "🇮🇹", "4334": "🇫🇷",
@@ -120,14 +117,19 @@ const JAPANESE_PLAYERS = {
     "Monaco": ["南野拓実"]
 };
 
+
 let currentMode = 'date'; 
 let selectedDateOffset = 0;
 let allEvents = []; 
 
+// 【修正】日本時間の「YYYY-MM-DD」を正確に取得する
 function getFormattedDate(offset = 0) {
     const d = new Date();
     d.setDate(d.getDate() + offset);
-    return d.toISOString().split('T')[0];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
 }
 
 function setMode(mode) {
@@ -145,52 +147,37 @@ function selectDateTab(offset, tabId) {
     render();
 }
 
-// ▼▼▼ 修正箇所：過去と未来のデータを両方取得する ▼▼▼
 async function fetchLeagueEvents(leagueId) {
-    const cacheKey = `events_combined_${leagueId}`;
+    const cacheKey = `events_v3_${leagueId}`; // キャッシュキーを更新
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
 
     if (cached) {
         const parsed = JSON.parse(cached);
-        if (now - parsed.timestamp < 1000 * 60 * 30) { 
-            return parsed.data;
-        }
+        if (now - parsed.timestamp < 1000 * 60 * 30) return parsed.data;
     }
 
     try {
-        // past（直近の過去15試合）と next（直近の未来15試合）を並列取得
         const [pastRes, nextRes] = await Promise.all([
             fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${leagueId}`),
             fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${leagueId}`)
         ]);
-
         const pastData = await pastRes.json();
         const nextData = await nextRes.json();
-
-        const pastEvents = pastData.events || [];
-        const nextEvents = nextData.events || [];
-
-        // 過去と未来のデータを1つの配列に合体させる
-        const combinedEvents = [...pastEvents, ...nextEvents];
-
-        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combinedEvents }));
-        return combinedEvents;
+        const combined = [...(pastData.events || []), ...(nextData.events || [])];
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combined }));
+        return combined;
     } catch (e) {
-        console.error(`Fetch error for ${leagueId}:`, e);
         return [];
     }
 }
-// ▲▲▲ 修正箇所ここまで ▲▲▲
 
 async function loadAllData() {
     const container = document.getElementById('match-list');
     container.innerHTML = '<p class="status-msg">全リーグのデータを取得中...</p>';
-
     const promises = Object.values(COMPETITION_IDS).map(id => fetchLeagueEvents(id));
     const results = await Promise.all(promises);
-    allEvents = results.flat(); 
-    
+    allEvents = results.flat();
     render();
 }
 
@@ -198,9 +185,7 @@ function findTeamName(apiName) {
     if (!apiName) return "";
     if (TEAM_DISPLAYS[apiName]) return TEAM_DISPLAYS[apiName];
     for (const key in TEAM_DISPLAYS) {
-        if (key.includes(apiName) || apiName.includes(key)) {
-            return TEAM_DISPLAYS[key];
-        }
+        if (key.includes(apiName) || apiName.includes(key)) return TEAM_DISPLAYS[key];
     }
     return apiName; 
 }
@@ -209,9 +194,7 @@ function findJapanesePlayers(apiName) {
     if (!apiName) return null;
     if (JAPANESE_PLAYERS[apiName]) return JAPANESE_PLAYERS[apiName];
     for (const key in JAPANESE_PLAYERS) {
-        if (key.includes(apiName) || apiName.includes(key)) {
-            return JAPANESE_PLAYERS[key];
-        }
+        if (key.includes(apiName) || apiName.includes(key)) return JAPANESE_PLAYERS[key];
     }
     return null;
 }
@@ -221,46 +204,29 @@ function render() {
     const isJapaneseOnly = document.getElementById('japanese-filter').checked;
     const leagueFilter = document.getElementById('league-filter').value;
 
-    // 日付表示の更新（UI用）
+    function getJSTInfo(event) {
+        const utcStr = event.strTimestamp ? event.strTimestamp.replace(" ", "T") : `${event.dateEvent}T${event.strTime || "00:00:00"}`;
+        const dateObj = new Date(utcStr + (utcStr.includes("Z") ? "" : "Z"));
+        const jstDate = dateObj.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
+        const jstTime = dateObj.toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
+        return { jstDate, jstTime, timestamp: dateObj.getTime() };
+    }
+
     if (currentMode === 'date') {
         const d = new Date();
         d.setDate(d.getDate() + selectedDateOffset);
-        const y = d.getFullYear();
-        const m = d.getMonth() + 1;
-        const day = d.getDate();
-        document.getElementById('date-display').innerText = `${y}年${m}月${day}日 の試合`;
+        document.getElementById('date-display').innerText = `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 の試合`;
     } else {
         document.getElementById('date-display').innerText = "";
     }
 
-    // 日本時間（JST）に変換してフォーマットするヘルパー関数
-    function getJSTInfo(event) {
-        // UTCの時間をDateオブジェクトとして生成
-        // TheSportsDBのstrTimestampは末尾にZがない場合があるため、明示的にUTCとして扱う
-        const utcStr = event.strTimestamp ? event.strTimestamp.replace(" ", "T") : `${event.dateEvent}T${event.strTime || "00:00:00"}`;
-        const dateObj = new Date(utcStr + "Z"); // 末尾にZをつけてUTCとして認識させる
-
-        // 日本時間に変換した「日付」と「時刻」を取得
-        const jstDate = dateObj.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }); // YYYY-MM-DD形式
-        const jstTime = dateObj.toLocaleTimeString('ja-JP', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' });
-        
-        return { jstDate, jstTime };
-    }
-
     let targetEvents = [];
-
     if (currentMode === 'date') {
         const targetDate = getFormattedDate(selectedDateOffset);
-        // 重要：APIのdateEvent（UTC）ではなく、日本時間に変換した後の日付でフィルタリングする
-        targetEvents = allEvents.filter(ev => {
-            const { jstDate } = getJSTInfo(ev);
-            return jstDate === targetDate;
-        });
+        targetEvents = allEvents.filter(ev => getJSTInfo(ev).jstDate === targetDate);
     } else {
         targetEvents = allEvents.filter(ev => ev.idLeague === leagueFilter);
-        
-        // 日付順に並び替え
-        targetEvents.sort((a, b) => new Date(a.strTimestamp) - new Date(b.strTimestamp));
+        targetEvents.sort((a, b) => getJSTInfo(a).timestamp - getJSTInfo(b).timestamp);
     }
 
     if (isJapaneseOnly) {
@@ -273,22 +239,10 @@ function render() {
     }
 
     container.innerHTML = targetEvents.map(ev => {
-        const flag = LEAGUE_FLAGS[ev.idLeague] || "🏳️";
-        const homeName = findTeamName(ev.strHomeTeam);
-        const awayName = findTeamName(ev.strAwayTeam);
-        
+        const { jstDate, jstTime } = getJSTInfo(ev);
         const homePlayersList = findJapanesePlayers(ev.strHomeTeam);
         const awayPlayersList = findJapanesePlayers(ev.strAwayTeam);
-        const homePlayers = homePlayersList ? `🇯🇵 ${homePlayersList.join(',')}` : "";
-        const awayPlayers = awayPlayersList ? `🇯🇵 ${awayPlayersList.join(',')}` : "";
-
-        // 日本時間の取得
-        const { jstDate, jstTime } = getJSTInfo(ev);
-
-        let scoreDisplay = "VS";
-        if (ev.intHomeScore !== null && ev.intAwayScore !== null) {
-            scoreDisplay = `${ev.intHomeScore} - ${ev.intAwayScore}`;
-        }
+        const scoreDisplay = (ev.intHomeScore !== null && ev.intAwayScore !== null) ? `${ev.intHomeScore} - ${ev.intAwayScore}` : "VS";
 
         return `
             <div class="match-card">
@@ -297,19 +251,16 @@ function render() {
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <div style="width: 40%; text-align: center;">
-                        <div style="font-weight: bold;">${flag} ${homeName}</div>
-                        ${homePlayers ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${homePlayers}</div>` : ''}
+                        <div style="font-weight: bold;">${LEAGUE_FLAGS[ev.idLeague] || "🏳️"} ${findTeamName(ev.strHomeTeam)}</div>
+                        ${homePlayersList ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">🇯🇵 ${homePlayersList.join(',')}</div>` : ''}
                     </div>
-                    <div style="width: 20%; text-align: center; font-weight: bold; font-size: 1.2rem; color: #8b4513;">
-                        ${scoreDisplay}
-                    </div>
+                    <div style="width: 20%; text-align: center; font-weight: bold; font-size: 1.2rem; color: #8b4513;">${scoreDisplay}</div>
                     <div style="width: 40%; text-align: center;">
-                        <div style="font-weight: bold;">${flag} ${awayName}</div>
-                        ${awayPlayers ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">${awayPlayers}</div>` : ''}
+                        <div style="font-weight: bold;">${LEAGUE_FLAGS[ev.idLeague] || "🏳️"} ${findTeamName(ev.strAwayTeam)}</div>
+                        ${awayPlayersList ? `<div style="font-size: 0.75em; color: white; background: #0046A7; padding: 2px 5px; border-radius: 5px; margin-top: 5px; display: inline-block;">🇯🇵 ${awayPlayersList.join(',')}</div>` : ''}
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
     }).join('');
 }
 
