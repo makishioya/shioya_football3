@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content, viewport-fit=cover">
+    <title>Shioya Football 3</title>
+    <style>
+        /* しおやソフト共通フォント設定（フォントファイルがある場合） */
+        /* @font-face {
+            font-family: 'SetoFont';
+            src: url('font/setofont.ttf') format('truetype');
+            font-display: block;
+        } */
+
+        * {
+            font-family: "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif; /* SetoFontがない場合のフォールバック */
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #2c3e50; 
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .top-bar {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            padding: 10px 20px;
+            background: rgba(67, 37, 23, 0.9);
+            color: #ECDBBF;
+            text-align: center;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .top-bar h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        .control-panel {
+            background: #fff8dc;
+            border: 3px solid #8b4513;
+            border-radius: 12px;
+            margin: 15px auto;
+            padding: 15px;
+            width: 95%;
+            max-width: 500px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .control-select {
+            padding: 12px;
+            border-radius: 10px;
+            border: 2px solid #8b4513;
+            font-size: 1rem;
+            width: 100%;
+            background-color: #ECDBBF;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* モード切り替えボタン（日付タブ or リーグ直近一覧） */
+        .mode-container {
+             display: flex;
+             gap: 10px;
+             margin-bottom: 15px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px 5px;
+            border-radius: 8px;
+            border: 2px solid #8b4513;
+            background: #ECDBBF;
+            color: #432517;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        .mode-btn.active {
+            background: linear-gradient(to bottom, #7B9C4B 0%, #4a5e2d 100%);
+            color: #fff;
+            border-color: #4a5e2d;
+        }
+
+        /* 日付タブ（昨日・今日・明日） */
+        .tab-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            background: #ECDBBF;
+            border-radius: 10px;
+            border: 2px solid #8b4513;
+            overflow: hidden;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            background: transparent;
+            color: #8b4513;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .tab-btn:not(:last-child) {
+            border-right: 2px solid #8b4513;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(to bottom, #ff9800, #f57c00);
+            color: #fff;
+            text-shadow: 1px 1px 2px #432517;
+        }
+
+        .toggle-label {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            background: #ECDBBF;
+            border: 2px solid #8b4513;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: #432517;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        main {
+            padding-bottom: 90px;
+        }
+
+        /* 試合カードのデザイン */
+        .match-card {
+            border: 3px solid #8b4513;
+            padding: 15px;
+            margin: 15px auto;
+            width: 95%;
+            max-width: 500px;
+            border-radius: 12px;
+            background: #fff8dc;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            color: #333;
+        }
+        
+        /* 取得中などのメッセージ */
+        .status-msg {
+            text-align: center;
+            color: #ECDBBF;
+            margin-top: 40px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar">
+        <h1>Shioya Football 3</h1>
+    </header>
+
+    <div class="control-panel">
+        
+        <!-- モード切り替え -->
+        <div class="mode-container">
+            <button id="mode-date" class="mode-btn active" onclick="setMode('date')">📅 日付で探す</button>
+            <button id="mode-league" class="mode-btn" onclick="setMode('league')">🏆 リーグの直近</button>
+        </div>
+
+        <select id="league-filter" class="control-select">
+            <option value="4328">🏴󠁧󠁢󠁥󠁮󠁧󠁿 プレミアリーグ (英)</option>
+            <option value="4335">🇪🇸 ラ・リーガ (西)</option>
+            <option value="4331">🇩🇪 ブンデスリーガ (独)</option>
+            <option value="4332">🇮🇹 セリエA (伊)</option>
+            <option value="4334">🇫🇷 リーグ・アン (仏)</option>
+            <option value="4324">🇯🇵 J1リーグ (日)</option>
+            <!-- 必要に応じてIDを追加 -->
+        </select>
+
+        <!-- 日付ナビゲーション (日付モードの時だけ表示) -->
+        <div id="date-tabs" class="tab-container">
+            <button id="tab-yesterday" class="tab-btn" onclick="selectDateTab(-1, 'tab-yesterday')">昨日</button>
+            <button id="tab-today" class="tab-btn active" onclick="selectDateTab(0, 'tab-today')">今日</button>
+            <button id="tab-tomorrow" class="tab-btn" onclick="selectDateTab(1, 'tab-tomorrow')">明日</button>
+        </div>
+
+        <label class="toggle-label">
+            <input type="checkbox" id="japanese-filter" style="margin-right: 8px; transform: scale(1.2);">
+            🇯🇵 日本人所属チームのみ
+        </label>
+        
+        <!-- 日付モードの時に、選択中の日付を表示する場所 -->
+        <div id="date-display" style="text-align: center; margin-top: 10px; font-weight: bold; color: #432517;"></div>
+
+    </div>
+
+    <main id="match-list">
+        <p class="status-msg">試合情報を読み込み中...</p>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
