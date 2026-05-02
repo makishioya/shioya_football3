@@ -23,17 +23,28 @@ const LEAGUE_FLAGS = {
     "4329": "🏴󠁧󠁢󠁥󠁮󠁧󠁿❷", "4344": "🇵🇹", "4337": "🇳🇱", "4338": "🇧🇪", "4324": "🇯🇵"
 };
 
-// 2. 翻訳リスト（フラット版）
+// 2. 翻訳リスト（フラット版・完全網羅版）
 const TEAM_DISPLAYS = {
-    // イングランド
+    // イングランド1部
     "Arsenal": "アーセナル", "Aston Villa": "アストン・ヴィラ", "Bournemouth": "ボーンマス",
     "Brentford": "ブレントフォード", "Brighton": "ブライトン", "Chelsea": "チェルシー",
     "Crystal Palace": "クリスタル・パレス", "Everton": "エヴァートン", "Fulham": "フラム",
     "Ipswich": "イプスウィッチ", "Leicester": "レスター", "Liverpool": "リヴァプール",
-    "Man City": "マンチェスター・C", "Man United": "マンチェスター・U", "Newcastle": "ニューカッスル",
-    "Nott'm Forest": "N・フォレスト", "Tottenham": "トッテナム", "West Ham": "ウェストハム",
-    "Wolves": "ウルヴズ",
+    "Man City": "マンチェスター・C", "Manchester City": "マンチェスター・C", "Man United": "マンチェスター・U", "Manchester United": "マンチェスター・U",
+    "Newcastle": "ニューカッスル", "Nott'm Forest": "N・フォレスト", "Nottingham Forest": "N・フォレスト", 
+    "Tottenham": "トッテナム", "West Ham": "ウェストハム", "Wolves": "ウルヴズ", "Wolverhampton": "ウルヴズ",
     
+    // イングランド2部（日本人所属チームなど）
+    "Blackburn": "ブラックバーン", "Burnley": "バーンリー", "Coventry": "コヴェントリー",
+    "Derby": "ダービー", "Leeds": "リーズ", "Luton": "ルートン", "Middlesbrough": "ミドルズブラ",
+    "Millwall": "ミルウォール", "Norwich": "ノリッジ", "Oxford": "オックスフォード",
+    "Plymouth": "プリマス", "Portsmouth": "ポーツマス", "Preston": "プレストン",
+    "QPR": "QPR", "Queens Park Rangers": "QPR", "Sheffield Utd": "シェフィールド・U",
+    "Sheffield Wed": "シェフィールド・W", "Stoke": "ストーク", "Sunderland": "サンダーランド",
+    "Swansea": "スウォンジー", "Watford": "ワトフォード", "West Brom": "WBA",
+    "Bristol City": "ブリストル・C", "Hull City": "ハル・シティ", "Southampton": "サウサンプトン",
+    "Cardiff": "カーディフ", "Birmingham": "バーミンガム",
+
     // スペイン
     "Alaves": "アラベス", "Ath Bilbao": "ビルバオ", "Atletico Madrid": "アトレティコ",
     "Barcelona": "バルセロナ", "Celta Vigo": "セルタ", "Espanyol": "エスパニョール",
@@ -46,17 +57,38 @@ const TEAM_DISPLAYS = {
     // ドイツ
     "Bayern Munich": "バイエルン", "Borussia Dortmund": "ドルトムント", "RB Leipzig": "ライプツィヒ",
     "Stuttgart": "シュトゥットガルト", "Hoffenheim": "ホッフェンハイム", "Bayer Leverkusen": "レヴァークーゼン",
-    "Eintracht Frankfurt": "フランクフルト", "Freiburg": "フライブルク", "Augsburg": "アウクスブルク",
-    "Mainz": "マインツ", "Borussia Monchengladbach": "ボルシアMG", "Werder Bremen": "ブレーメン",
-    "Union Berlin": "ウニオン・ベルリン", "FC Koln": "ケルン", "St Pauli": "ザンクトパウリ",
-    "Wolfsburg": "ヴォルフスブルク", "Heidenheim": "ハイデンハイム", "Bochum": "ボーフム",
+    "Leverkusen": "レヴァークーゼン", "Eintracht Frankfurt": "フランクフルト", "Freiburg": "フライブルク", 
+    "Augsburg": "アウクスブルク", "Mainz": "マインツ", "Borussia Monchengladbach": "ボルシアMG", 
+    "Werder Bremen": "ブレーメン", "Union Berlin": "ウニオン・ベルリン", "FC Koln": "ケルン", 
+    "St Pauli": "ザンクトパウリ", "Wolfsburg": "ヴォルフスブルク", "Heidenheim": "ハイデンハイム", 
+    "Bochum": "ボーフム", "Darmstadt": "ダルムシュタット", "Fortuna Dusseldorf": "デュッセルドルフ",
+
+    // イタリア
+    "Atalanta": "アタランタ", "Bologna": "ボローニャ", "Cagliari": "カリアリ", "Como": "コモ",
+    "Empoli": "エンポリ", "Fiorentina": "フィオレンティーナ", "Genoa": "ジェノア", "Inter Milan": "インテル",
+    "Inter": "インテル", "Juventus": "ユヴェントス", "Lazio": "ラツィオ", "Lecce": "レッチェ",
+    "AC Milan": "ミラン", "Monza": "モンツァ", "Napoli": "ナポリ", "Parma": "パルマ",
+    "Roma": "ローマ", "Torino": "トリノ", "Udinese": "ウディネーゼ", "Venezia": "ヴェネツィア",
+    "Verona": "ヴェローナ",
     
     // フランス
-    "Monaco": "モナコ", "Paris SG": "パリSG", "Marseille": "マルセイユ",
+    "Monaco": "モナコ", "Paris SG": "パリSG", "Marseille": "マルセイユ", "Le Havre": "ル・アーヴル",
+    "Lyon": "リヨン", "Lille": "リール", "Lens": "ランス", "Brest": "ブレスト", "Rennes": "レンヌ",
+    "Nice": "ニース", "Reims": "スタッド・ランス", "Toulouse": "トゥールーズ", "Nantes": "ナント",
     
-    // 日本
-    "Urawa Red Diamonds": "浦和レッズ"
-    // ※TheSportsDBの表記揺れに対応するため、必要に応じて適宜追加してください。
+    // オランダ・ベルギー・ポルトガル・スコットランド
+    "Ajax": "アヤックス", "Feyenoord": "フェイエノールト", "PSV Eindhoven": "PSV", "AZ Alkmaar": "AZ",
+    "Anderlecht": "アンデルレヒト", "Club Brugge": "クラブ・ブルッヘ", "Genk": "ヘンク", 
+    "Sint-Truiden": "シント＝トロイデン", "OH Leuven": "OHルーヴェン", "Westerlo": "ウェステルロー",
+    "Benfica": "ベンフィカ", "Porto": "ポルト", "Sporting CP": "スポルティング", "Celtic": "セルティック",
+    
+    // Jリーグ
+    "Albirex Niigata": "新潟", "Avispa Fukuoka": "福岡", "Cerezo Osaka": "C大阪", "Consadole Sapporo": "札幌",
+    "FC Tokyo": "FC東京", "Gamba Osaka": "G大阪", "Jubilo Iwata": "磐田", "Kashima Antlers": "鹿島",
+    "Kashiwa Reysol": "柏", "Kawasaki Frontale": "川崎F", "Kyoto Sanga": "京都", "Machida Zelvia": "町田",
+    "Nagoya Grampus": "名古屋", "Sagan Tosu": "鳥栖", "Sanfrecce Hiroshima": "広島", 
+    "Shonan Bellmare": "湘南", "Tokyo Verdy": "東京V", "Urawa Red Diamonds": "浦和レッズ", 
+    "Vissel Kobe": "神戸", "Yokohama F. Marinos": "横浜FM"
 };
 
 // 3. 日本人選手データ
