@@ -397,6 +397,31 @@ function render() {
     const isJapaneseOnly = document.getElementById('japanese-filter').checked;
     const leagueFilter = document.getElementById('league-filter').value;
 
+    function findTeamName(apiName) {
+        // 完全一致を最初に試す
+        if (TEAM_DISPLAYS[apiName]) return TEAM_DISPLAYS[apiName];
+
+        // 完全一致しない場合、APIの名前で「始まる」または「含まれる」キーを探す
+        for (const key in TEAM_DISPLAYS) {
+             // 例: "Arsenal FC".includes("Arsenal") 
+            if (key.includes(apiName) || apiName.includes(key)) {
+                return TEAM_DISPLAYS[key];
+            }
+        }
+        return apiName; // 見つからなければ元の名前を返す
+    }
+
+    function findJapanesePlayers(apiName) {
+        if (JAPANESE_PLAYERS[apiName]) return JAPANESE_PLAYERS[apiName];
+
+        for (const key in JAPANESE_PLAYERS) {
+            if (key.includes(apiName) || apiName.includes(key)) {
+                return JAPANESE_PLAYERS[key];
+            }
+        }
+        return null;
+    }
+
     let targetEvents = [];
 
     if (currentMode === 'date') {
