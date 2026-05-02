@@ -150,8 +150,7 @@ function selectDateTab(offset, tabId) {
 // ▼▼▼ ここから書き換え ▼▼▼
 
 async function fetchLeagueEvents(leagueId) {
-    // キャッシュキーを v5 に変更し、前回の失敗したキャッシュを強制的に無効化
-    const cacheKey = `events_v5_${leagueId}`;
+    const cacheKey = `events_v7_${leagueId}`; // v7に変更して古いキャッシュを破棄
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
 
@@ -161,18 +160,22 @@ async function fetchLeagueEvents(leagueId) {
     }
 
     try {
-        // 同時アクセスでブロックされないよう、過去と未来を「順番に」取得する
         const pastRes = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${leagueId}`);
         const pastData = await pastRes.json();
 
-        // サーバーへの負荷を避けるため 0.2秒 待機
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // サーバーへの負荷を避けるため 1秒 待機
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const nextRes = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${leagueId}`);
         const nextData = await nextRes.json();
 
         const combined = [...(pastData.events || []), ...(nextData.events || [])];
-        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combined }));
+        
+        // 【修正】取得できた件数が1件以上ある場合のみキャッシュに保存する（空データ記憶の防止）
+        if (combined.length > 0) {
+            localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combined }));
+        }
+        
         return combined;
     } catch (e) {
         console.error(`リーグID ${leagueId} の取得に失敗:`, e);
