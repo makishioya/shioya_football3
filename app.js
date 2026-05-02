@@ -1,5 +1,5 @@
 /**
- * Shioya Football 3 - TheSportsDB版 (JST完全対応版)
+ * Shioya Football 3 - TheSportsDB版 (JST完全同期版)
  */
 
 const COMPETITION_IDS = {
@@ -122,7 +122,7 @@ let currentMode = 'date';
 let selectedDateOffset = 0;
 let allEvents = []; 
 
-// 【修正】日本時間の「YYYY-MM-DD」を正確に取得する
+// 日本時間の「YYYY-MM-DD」を正確に取得する
 function getFormattedDate(offset = 0) {
     const d = new Date();
     d.setDate(d.getDate() + offset);
@@ -148,7 +148,7 @@ function selectDateTab(offset, tabId) {
 }
 
 async function fetchLeagueEvents(leagueId) {
-    const cacheKey = `events_v3_${leagueId}`; // キャッシュキーを更新
+    const cacheKey = `events_v4_${leagueId}`;
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
 
@@ -178,6 +178,7 @@ async function loadAllData() {
     const promises = Object.values(COMPETITION_IDS).map(id => fetchLeagueEvents(id));
     const results = await Promise.all(promises);
     allEvents = results.flat();
+    console.log(`取得済み試合数: ${allEvents.length}`); // デバッグ用
     render();
 }
 
@@ -205,6 +206,7 @@ function render() {
     const leagueFilter = document.getElementById('league-filter').value;
 
     function getJSTInfo(event) {
+        // strTimestampをパースしてJSTに変換
         const utcStr = event.strTimestamp ? event.strTimestamp.replace(" ", "T") : `${event.dateEvent}T${event.strTime || "00:00:00"}`;
         const dateObj = new Date(utcStr + (utcStr.includes("Z") ? "" : "Z"));
         const jstDate = dateObj.toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
