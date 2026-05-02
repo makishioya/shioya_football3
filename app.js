@@ -147,8 +147,11 @@ function selectDateTab(offset, tabId) {
     render();
 }
 
+// ▼▼▼ ここから書き換え ▼▼▼
+
 async function fetchLeagueEvents(leagueId) {
-    const cacheKey = `events_v4_${leagueId}`;
+    // キャッシュキーを v5 に変更し、前回の失敗したキャッシュを強制的に無効化
+    const cacheKey = `events_v5_${leagueId}`;
     const cached = localStorage.getItem(cacheKey);
     const now = new Date().getTime();
 
@@ -158,29 +161,47 @@ async function fetchLeagueEvents(leagueId) {
     }
 
     try {
-        const [pastRes, nextRes] = await Promise.all([
-            fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${leagueId}`),
-            fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${leagueId}`)
-        ]);
+        // 同時アクセスでブロックされないよう、過去と未来を「順番に」取得する
+        const pastRes = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventspastleague.php?id=${leagueId}`);
         const pastData = await pastRes.json();
+
+        // サーバーへの負荷を避けるため 0.2秒 待機
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        const nextRes = await fetch(`https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=${leagueId}`);
         const nextData = await nextRes.json();
+
         const combined = [...(pastData.events || []), ...(nextData.events || [])];
         localStorage.setItem(cacheKey, JSON.stringify({ timestamp: now, data: combined }));
         return combined;
     } catch (e) {
+        console.error(`リーグID ${leagueId} の取得に失敗:`, e);
         return [];
     }
 }
 
 async function loadAllData() {
     const container = document.getElementById('match-list');
-    container.innerHTML = '<p class="status-msg">全リーグのデータを取得中...</p>';
-    const promises = Object.values(COMPETITION_IDS).map(id => fetchLeagueEvents(id));
-    const results = await Promise.all(promises);
-    allEvents = results.flat();
-    console.log(`取得済み試合数: ${allEvents.length}`); // デバッグ用
+    const leagueIds = Object.values(COMPETITION_IDS);
+    allEvents = []; 
+
+    // Promise.all をやめ、1リーグずつ「順番に」取得する（直列処理）
+    for (let i = 0; i < leagueIds.length; i++) {
+        // 画面に現在の進捗状況を表示
+        container.innerHTML = `<p class="status-msg">試合データを取得中...<br>(${i + 1} / ${leagueIds.length} リーグ完了)</p>`;
+        
+        const events = await fetchLeagueEvents(leagueIds[i]);
+        allEvents = allEvents.concat(events);
+
+        // 次のリーグを取得する前に 0.3秒 待機
+        await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    console.log(`取得済み試合数: ${allEvents.length}`); 
     render();
 }
+
+// ▲▲▲ ここまで書き換え ▲▲▲
 
 function findTeamName(apiName) {
     if (!apiName) return "";
